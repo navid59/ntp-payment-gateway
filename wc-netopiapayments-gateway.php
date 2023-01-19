@@ -482,13 +482,14 @@ class netopiapayments extends WC_Payment_Gateway {
 					                	else {
 
 					                		//Update order status
-											$order->update_status( $this->default_status, 'Payment received, your order is currently being processed.' );
+											$msgDefaultStatus = ($this->default_status == 'processing') ? 'Payment received, your order is currently being processed.' : 'Payment received, your order is now complete.';
+											$order->update_status( $this->default_status, $msgDefaultStatus );
 
 											//Add admin order noote
 						                    $order->add_order_note('Plata prin NETOPIA payments<br />Transaction ID: '.$transaction_id);
 
 						                    //Add customer order note
-						 					$order->add_order_note('Payment Received.<br />Your order is currently being processed.<br />We will be shipping your order to you soon.<br />NETOPIA Transaction ID: '.$transaction_id, 1);
+						 					$order->add_order_note($msgDefaultStatus.'<br />NETOPIA Transaction ID: '.$transaction_id, 1);
 
 											$message = 'Thank you for shopping with us.<br />Your transaction was successful, payment was received.<br />Your order is currently being processed.';
 											$message_type = 'success';
