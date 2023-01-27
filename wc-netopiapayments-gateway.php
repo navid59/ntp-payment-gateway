@@ -2,6 +2,7 @@
 class netopiapayments extends WC_Payment_Gateway {
 	// Setup our Gateway's id, description and other values
 	function __construct() {
+
 		$this->id = "netopiapayments";
 		$this->method_title = __( "NETOPIA Payments", 'netopiapayments' );
 		$this->method_description = __( "NETOPIA Payments Payment Gateway Plug-in for WooCommerce", 'netopiapayments' );
@@ -37,10 +38,17 @@ class netopiapayments extends WC_Payment_Gateway {
 			// class will be used instead
 
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-		}
 
+			if(get_option( 'woocommerce_netopiapayments_certifications' ) === 'verify-and-regenerate') {
+				if($this->account_id) {
+					$this->certificateVerifyRegenerate($this->account_id);
+					delete_option( 'woocommerce_netopiapayments_certifications' );// delete Option after executed one time
+				}
+			}
+		}
+		
 		add_action('woocommerce_receipt_netopiapayments', array(&$this, 'receipt_page'));
-	} // End __construct()	
+	}
 
 	// Build the administration fields for this specific Gateway
 	public function init_form_fields() {
@@ -138,6 +146,15 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
 	function payment_fields() {
+
+		/**
+		 * 
+		 * temporary Comment
+		 * NOTE GET CARD LIST HERE 
+		 * To add it in Params
+		 * 
+		 */
+
 		$user = wp_get_current_user();
       	// Description of payment method from settings
       	if ( $this->description ) { ?>
@@ -148,7 +165,7 @@ class netopiapayments extends WC_Payment_Gateway {
   		}else{
   			$payment_methods = array('credit_card');
   		}
-  		//echo "<pre>payment_methods: "; print_r($payment_methods); echo "</pre>";
+  		
   		$name_methods = array(
 		          'credit_card'	      => __( 'Credit Card', 'netopiapayments' ),
 		          'sms'			        => __('SMS' , 'netopiapayments' ),
@@ -266,10 +283,10 @@ class netopiapayments extends WC_Payment_Gateway {
 						   ? 'https://sandboxsecure.mobilpay.ro/'
 						   : 'https://secure.mobilpay.ro/';
 		if ($this->environment == 'yes') {
-			$x509FilePath = plugin_dir_path( __FILE__ ).'netopia/sandbox.'.$this->account_id.'.public.cer';
+			$x509FilePath = plugin_dir_path( __FILE__ ).'netopia/certificate/sandbox.'.$this->account_id.'.public.cer';
 		}
 		else {
-			$x509FilePath = plugin_dir_path( __FILE__ ).'netopia/live.'.$this->account_id.'.public.cer';
+			$x509FilePath = plugin_dir_path( __FILE__ ).'netopia/certificate/live.'.$this->account_id.'.public.cer';
 		}
 
 		require_once 'netopia/Payment/Request/Abstract.php';		
@@ -337,7 +354,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		}		
 		
 		$objPmReq->params = array('order_id'=>$order_id,'customer_id'=>$customer_order->get_user_id(),'customer_ip'=>$_SERVER['REMOTE_ADDR'],'method'=>$method);	
-		try {	
+		try {
 		$objPmReq->encrypt($x509FilePath);
 		//echo "<pre>objPmReq: "; print_r($objPmReq); echo "</pre>";
 		return '	<form action="'.$paymentUrl.'" method="post" id="frmPaymentRedirect">
@@ -396,10 +413,10 @@ class netopiapayments extends WC_Payment_Gateway {
 		$msg_errors = array('16'=>'card has a risk (i.e. stolen card)', '17'=>'card number is incorrect', '18'=>'closed card', '19'=>'card is expired', '20'=>'insufficient funds', '21'=>'cVV2 code incorrect', '22'=>'issuer is unavailable', '32'=>'amount is incorrect', '33'=>'currency is incorrect', '34'=>'transaction not permitted to cardholder', '35'=>'transaction declined', '36'=>'transaction rejected by antifraud filters', '37'=>'transaction declined (breaking the law)', '38'=>'transaction declined', '48'=>'invalid request', '49'=>'duplicate PREAUTH', '50'=>'duplicate AUTH', '51'=>'you can only CANCEL a preauth order', '52'=>'you can only CONFIRM a preauth order', '53'=>'you can only CREDIT a confirmed order', '54'=>'credit amount is higher than auth amount', '55'=>'capture amount is higher than preauth amount', '56'=>'duplicate request', '99'=>'generic error');
 		
 		if ($this->environment == 'yes') {
-			$privateKeyFilePath 	= plugin_dir_path( __FILE__ ).'netopia/sandbox.'.$this->account_id.'private.key';
+			$privateKeyFilePath 	= plugin_dir_path( __FILE__ ).'netopia/certificate/sandbox.'.$this->account_id.'private.key';
 		}
 		else {
-			$privateKeyFilePath 	= plugin_dir_path( __FILE__ ).'netopia/live.'.$this->account_id.'private.key';
+			$privateKeyFilePath 	= plugin_dir_path( __FILE__ ).'netopia/certificate/live.'.$this->account_id.'private.key';
 		}
 
 		if (strcasecmp($_SERVER['REQUEST_METHOD'], 'post') == 0){
@@ -651,6 +668,7 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
     public function process_admin_options() {
+		
         $this->init_settings();
         $post_data = $this->get_post_data();
         $cerValidation = $this->cerValidation();
@@ -669,7 +687,7 @@ class netopiapayments extends WC_Payment_Gateway {
                         if($_FILES['woocommerce_netopiapayments_'.$key]['size'] != 0 ) {
                             $strMessage = $cerValidation[$key]['type']. ' - ' .$cerValidation[$key]['message'];
                             $this->settings[ $key ] = $this->validate_text_field( $key, $strMessage );
-                        }
+                        } 
                     } catch ( Exception $e ) {
                         $this->add_error( $e->getMessage() );
                     }
@@ -705,6 +723,8 @@ class netopiapayments extends WC_Payment_Gateway {
             else {
                   if ($this->sanitizeVerify($file_extension, $key)){
                     $response = $this->uploadCer($fileInput);
+					$fileContent = $this->getCertificateContent($fileInput["name"]);
+					$this->updateCertificateContent($key.'_content', $fileContent);
                     } else {
                         $response = array(
                             "type" => "error",
@@ -713,23 +733,23 @@ class netopiapayments extends WC_Payment_Gateway {
                     }
                  }
 
-            // Generate Status
+            // Uploaded certificates
             switch ($key) {
                 case "woocommerce_netopiapayments_live_cer" :
-                    $status['live_cer'] = $response;
+                    $certificate['live_cer'] = $response;
                     break;
                 case "woocommerce_netopiapayments_live_key" :
-                    $status['live_key'] = $response;
+                    $certificate['live_key'] = $response;
                     break;
                 case "woocommerce_netopiapayments_sandbox_cer" :
-                    $status['sandbox_cer'] = $response;
+                    $certificate['sandbox_cer'] = $response;
                     break;
                 case "woocommerce_netopiapayments_sandbox_key" :
-                    $status['sandbox_key'] = $response;
+                    $certificate['sandbox_key'] = $response;
                     break;
             }
         }
-        return $status;
+        return $certificate;
     }
 
     public function sanitizeVerify($file_extension, $key) {
@@ -749,7 +769,7 @@ class netopiapayments extends WC_Payment_Gateway {
     }
 
     public function uploadCer($fileInput) {
-        $target = plugin_dir_path( __FILE__ ).'netopia/'.basename($fileInput["name"]);
+        $target = plugin_dir_path( __FILE__ ).'netopia/certificate/'.basename($fileInput["name"]);
         if (move_uploaded_file($fileInput["tmp_name"], $target)) {
             $response = array(
                 "type" => "success",
@@ -767,5 +787,38 @@ class netopiapayments extends WC_Payment_Gateway {
 
     private function _canManageWcSettings() {
         return current_user_can('manage_woocommerce');
+	}
+
+	public function getCertificateContent($fName){
+		$certificateMap = plugin_dir_path( __FILE__ ).'netopia/certificate/'.$fName;
+		$fileContent = file_get_contents($certificateMap, FILE_USE_INCLUDE_PATH);
+		return $fileContent;
+	}
+
+	public function updateCertificateContent($key,$content) {
+		update_option( $key, $content, 'yes' );
+	}
+
+	public function certificateVerifyRegenerate($account_id) {
+		$map = plugin_dir_path( __FILE__ ).'netopia/certificate/';		
+		$arr = [
+			'sandbox_cer_content' => 'sandbox.'.$account_id.'.public.cer',
+			'sandbox_key_content' => 'sandbox.'.$account_id.'private.key',
+			'live_cer_content' => 'live.'.$account_id.'.public.cer',
+			'live_key_content' => 'live.'.$account_id.'private.key'
+		];
+		foreach($arr as $key => $value) {
+			$fName = $map.$value;
+			if (file_exists($fName)) {
+				break;
+			} else {
+				$keyContent = get_option('woocommerce_netopiapayments_'.$key, false);
+				if ($keyContent) {
+					if(file_put_contents($fName, $keyContent)) {
+						chmod($fName, 0444);
+					}					
+				}
+			}
+		}
 	}
 }
