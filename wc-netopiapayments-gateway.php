@@ -3,12 +3,12 @@ class netopiapayments extends WC_Payment_Gateway {
 	// Setup our Gateway's id, description and other values
 	function __construct() {
 
-		$this->id = "netopiapayments";
-		$this->method_title = __( "NETOPIA Payments", 'netopiapayments' );
-		$this->method_description = __( "NETOPIA Payments Payment Gateway Plug-in for WooCommerce", 'netopiapayments' );
-		$this->title = __( "NETOPIA", 'netopiapayments' );
-		$this->icon = NTP_PLUGIN_DIR . 'img/netopiapayments.gif';
-		$this->has_fields = true;
+		$this->id 					= "netopiapayments";
+		$this->method_title 		= __( "NETOPIA Payments", 'netopiapayments' );
+		$this->method_description 	= __( "NETOPIA Payments Payment Gateway Plug-in for WooCommerce", 'netopiapayments' );
+		$this->title 				= __( "NETOPIA", 'netopiapayments' );
+		$this->icon 				= NTP_PLUGIN_DIR . 'img/netopiapayments.gif';
+		$this->has_fields 			= true;
 		$this->notify_url        	= WC()->api_request_url( 'netopiapayments' );
 
 		// Supports the default credit card form
@@ -147,15 +147,7 @@ class netopiapayments extends WC_Payment_Gateway {
 
 	function payment_fields() {
 
-		/**
-		 * 
-		 * temporary Comment
-		 * NOTE GET CARD LIST HERE 
-		 * To add it in Params
-		 * 
-		 */
-
-		$user = wp_get_current_user();
+		$user = wp_get_current_user(); //?????????
       	// Description of payment method from settings
       	if ( $this->description ) { ?>
         	<p><?php echo $this->description; ?></p>
@@ -274,11 +266,13 @@ class netopiapayments extends WC_Payment_Gateway {
 		// who to charge and how much
 		$customer_order = new WC_Order( $order_id );
 		$user = new WP_User( $customer_order->get_user_id());
-		
-		// Are we testing right now or is it a real transaction
-		//$environment = ( $this->environment == 'yes' ) ? 'TRUE' : 'FALSE';
-
-		// Decide which URL to post to
+				
+		/**
+		 * Plugin working on two diffrent environment
+		 * - sandbox :  as test mod
+		 * - live : for real transactions
+		 *  in folowing we decide which mod to use
+		 */
 		$paymentUrl = ( $this->environment == 'yes' ) 
 						   ? 'https://sandboxsecure.mobilpay.ro/'
 						   : 'https://secure.mobilpay.ro/';
@@ -353,7 +347,17 @@ class netopiapayments extends WC_Payment_Gateway {
 			$objPmReq->invoice->setShippingAddress($shippingAddress);
 		}		
 		
-		$objPmReq->params = array('order_id'=>$order_id,'customer_id'=>$customer_order->get_user_id(),'customer_ip'=>$_SERVER['REMOTE_ADDR'],'method'=>$method);	
+		$objPmReq->params = array(
+			'order_id'		=>$order_id,
+			'customer_id'	=>$customer_order->get_user_id(),
+			'customer_ip'	=>$_SERVER['REMOTE_ADDR'],
+			'method'		=>$method,
+			'cartSummery' 	=> $this->getCartSummery(),
+			'wordpress' 	=> $this->getWpInfo(),
+			'wooCommerce' 	=> $this->getWooInfo()
+		);
+		
+
 		try {
 		$objPmReq->encrypt($x509FilePath);
 		//echo "<pre>objPmReq: "; print_r($objPmReq); echo "</pre>";
@@ -618,7 +622,7 @@ class netopiapayments extends WC_Payment_Gateway {
 			$errorCode		= Netopia_Payment_Request_Abstract::ERROR_CONFIRM_INVALID_POST_METHOD;
 			$errorMessage 	= 'invalid request method for payment confirmation';
 		}
-		// $this->bpLog('errorType: '.$errorType.' -- errorCode: '.$errorCode.' -- errorMessage: '.$errorMessage);
+		
 		header('Content-type: application/xml');
 		echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 		if($errorCode == 0)
@@ -655,16 +659,14 @@ class netopiapayments extends WC_Payment_Gateway {
 		return null;
 	}
 
-	public function bpLog($contents,$file=false){
-		if(!$file)	$file = dirname(__FILE__).'/bplog.txt';
-		file_put_contents($file, date('m-d H:i:s').": ", FILE_APPEND);
-		
+	public function ntpLog($contents){
+		$file = dirname(__FILE__).'/ntpDebugging_'.date('y-m-d').'.txt';
 		if (is_array($contents))
 			$contents = var_export($contents, true);	
 		else if (is_object($contents))
 			$contents = json_encode($contents);
 			
-		file_put_contents($file, $contents."\n", FILE_APPEND);			
+		file_put_contents($file, date('m-d H:i:s').$contents."\n", FILE_APPEND);
 	}
 
     public function process_admin_options() {
@@ -820,5 +822,30 @@ class netopiapayments extends WC_Payment_Gateway {
 				}
 			}
 		}
+	}
+
+	public function getCartSummery() {
+		$cartArr = WC()->cart->get_cart();
+		$i = 0;
+		$cartSummery = array();
+		foreach ($cartArr as $key => $value ) {
+			$cartSummery[$i]['name'] 				=  $value['data']->name;
+			$cartSummery[$i]['price'] 			=  $value['data']->price;
+			$cartSummery[$i]['quantity'] 			=  $value['quantity'];
+			$cartSummery[$i]['short_description'] =  substr($value['data']->short_description, 0, 100);
+			$i++;
+		}
+		return json_encode($cartSummery);
+	}
+
+	public function getWpInfo() {
+		global $wp_version;
+		return 'Version '.$wp_version;
+		
+	}
+
+	public function getWooInfo() {
+		$wooCommerce_ver = WC()->version;
+		return 'Version '.$wooCommerce_ver;
 	}
 }
