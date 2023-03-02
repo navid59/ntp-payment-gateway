@@ -146,16 +146,9 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
 	function payment_fields() {
-
-		$user = wp_get_current_user(); //?????????
+		$user = wp_get_current_user(); 
       	// Description of payment method from settings
-      	if ( $this->description ) { ?>
-        	<p><?php echo $this->description; ?></p>
-  		<?php }
-  		if ( $this->payment_methods ) {  
-  			$payment_methods = $this->payment_methods;	
-  		}else{
-  			$payment_methods = array('credit_card');
+      	if ( $this->description ) { curencyy('credit_card');
   		}
   		
   		$name_methods = array(
@@ -324,7 +317,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		
 		if($method != 'sms'){
 			$objPmReq->invoice = new Netopia_Payment_Invoice();
-			$objPmReq->invoice->currency	= $customer_order->get_currency();;//$customer_order->get_order_currency();//;get_woocommerce_currency();
+			$objPmReq->invoice->currency	= $customer_order->get_currency();//$customer_order->get_order_currency();//;get_woocommerce_currency();
 			$objPmReq->invoice->amount		= sprintf('%.2f',$customer_order->get_total());//sprintf('%.2f',$customer_order->order_total);
 			$objPmReq->invoice->details		= 'Plata pentru comanda cu ID: '.$order_id.' with '.$name_methods[$method];
 
@@ -352,7 +345,7 @@ class netopiapayments extends WC_Payment_Gateway {
 			'customer_id'	=>$customer_order->get_user_id(),
 			'customer_ip'	=>$_SERVER['REMOTE_ADDR'],
 			'method'		=>$method,
-			'cartSummery' 	=> $this->getCartSummery(),
+			'cartSummary' 	=> $this->getCartSummary(),
 			'wordpress' 	=> $this->getWpInfo(),
 			'wooCommerce' 	=> $this->getWooInfo()
 		);
@@ -824,18 +817,18 @@ class netopiapayments extends WC_Payment_Gateway {
 		}
 	}
 
-	public function getCartSummery() {
+	public function getCartSummary() {
 		$cartArr = WC()->cart->get_cart();
 		$i = 0;
-		$cartSummery = array();
+		$cartSummary = array();
 		foreach ($cartArr as $key => $value ) {
-			$cartSummery[$i]['name'] 				=  $value['data']->name;
-			$cartSummery[$i]['price'] 			=  $value['data']->price;
-			$cartSummery[$i]['quantity'] 			=  $value['quantity'];
-			$cartSummery[$i]['short_description'] =  substr($value['data']->short_description, 0, 100);
+			$cartSummary[$i]['name'] 				=  $value['data']->name;
+			$cartSummary[$i]['price'] 			=  $value['data']->price;
+			$cartSummary[$i]['quantity'] 			=  $value['quantity'];
+			$cartSummary[$i]['short_description'] =  substr($value['data']->short_description, 0, 100);
 			$i++;
 		}
-		return json_encode($cartSummery);
+		return json_encode($cartSummary);
 	}
 
 	public function getWpInfo() {
