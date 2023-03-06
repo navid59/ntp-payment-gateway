@@ -15,7 +15,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		$this->supports = array(
 	               'products',
 	               'refunds'
-	               );//array( 'default_credit_card_form' );
+	               );
 		
 		$this->init_form_fields();
 		
@@ -146,16 +146,22 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
 	function payment_fields() {
-		$user = wp_get_current_user(); 
       	// Description of payment method from settings
-      	if ( $this->description ) { curencyy('credit_card');
+      	if ( $this->description ) {
+			?><p><?php echo $this->description; ?></p><?php 
+		}
+
+  		if ( $this->payment_methods ) {
+  			$payment_methods = $this->payment_methods;	
+  		}else{
+  			$payment_methods = array('credit_card');
   		}
   		
   		$name_methods = array(
-		          'credit_card'	      => __( 'Credit Card', 'netopiapayments' ),
-		          'sms'			        => __('SMS' , 'netopiapayments' ),
-		          'bank_transfer'		      => __( 'Bank Transfer', 'netopiapayments' ),
-		          'bitcoin'  => __( 'Bitcoin', 'netopiapayments' )
+		          'credit_card'	  => __( 'Credit Card', 'netopiapayments' ),
+		          'sms'			  => __('SMS' , 'netopiapayments' ),
+		          'bank_transfer' => __( 'Bank Transfer', 'netopiapayments' ),
+		          'bitcoin'  	  => __( 'Bitcoin', 'netopiapayments' )
 		          );
   		?>
   		<div id="netopia-methods">
@@ -282,10 +288,10 @@ class netopiapayments extends WC_Payment_Gateway {
 
 		$method = $this->get_post( 'method' );
 		$name_methods = array(
-		          'credit_card'	      => __( 'Credit Card', 'netopiapayments' ),
-		          'sms'			        => __('SMS' , 'netopiapayments' ),
-		          'bank_transfer'		      => __( 'Bank Transfer', 'netopiapayments' ),
-		          'bitcoin'  => __( 'Bitcoin', 'netopiapayments' )
+		          'credit_card'	  => __( 'Credit Card', 'netopiapayments' ),
+		          'sms'			  => __('SMS' , 'netopiapayments' ),
+		          'bank_transfer' => __( 'Bank Transfer', 'netopiapayments' ),
+		          'bitcoin'  	  => __( 'Bitcoin', 'netopiapayments' )
 		          );
 		switch ($method) {
 			case 'sms':		
@@ -317,8 +323,8 @@ class netopiapayments extends WC_Payment_Gateway {
 		
 		if($method != 'sms'){
 			$objPmReq->invoice = new Netopia_Payment_Invoice();
-			$objPmReq->invoice->currency	= $customer_order->get_currency();//$customer_order->get_order_currency();//;get_woocommerce_currency();
-			$objPmReq->invoice->amount		= sprintf('%.2f',$customer_order->get_total());//sprintf('%.2f',$customer_order->order_total);
+			$objPmReq->invoice->currency	= $customer_order->get_currency();
+			$objPmReq->invoice->amount		= sprintf('%.2f',$customer_order->get_total());
 			$objPmReq->invoice->details		= 'Plata pentru comanda cu ID: '.$order_id.' with '.$name_methods[$method];
 
 			$billingAddress 				= new Netopia_Payment_Address();
@@ -341,11 +347,11 @@ class netopiapayments extends WC_Payment_Gateway {
 		}		
 		
 		$objPmReq->params = array(
-			'order_id'		=>$order_id,
-			'customer_id'	=>$customer_order->get_user_id(),
-			'customer_ip'	=>$_SERVER['REMOTE_ADDR'],
-			'method'		=>$method,
-			'cartSummary' 	=> $this->getCartSummary(),
+			'order_id'		=> $order_id,
+			'customer_id'	=> $customer_order->get_user_id(),
+			'customer_ip'	=> $_SERVER['REMOTE_ADDR'],
+			'method'		=> $method,
+			'cartSummery' 	=> $this->getCartSummary(),
 			'wordpress' 	=> $this->getWpInfo(),
 			'wooCommerce' 	=> $this->getWooInfo()
 		);
@@ -353,8 +359,8 @@ class netopiapayments extends WC_Payment_Gateway {
 
 		try {
 		$objPmReq->encrypt($x509FilePath);
-		//echo "<pre>objPmReq: "; print_r($objPmReq); echo "</pre>";
-		return '	<form action="'.$paymentUrl.'" method="post" id="frmPaymentRedirect">
+		
+		return '<form action="'.$paymentUrl.'" method="post" id="frmPaymentRedirect">
 				<input type="hidden" name="env_key" value="'.$objPmReq->getEnvKey().'"/>
 				<input type="hidden" name="data" value="'.$objPmReq->getEncData().'"/>				
 				<input type="submit" class="button-alt" id="submit_netopia_payment_form" value="'.__('Plateste prin NETOPIA payments', 'netopiapayments').'" /> <a class="button cancel" href="'.$customer_order->get_cancel_order_url().'">'.__('Anuleaza comanda &amp; goleste cosul', 'netopiapayments').'</a>
@@ -626,8 +632,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		{
 			echo "<crc error_type=\"{$errorType}\" error_code=\"{$errorCode}\">{$errorMessage}</crc>";
 			
-		}	
-		// wc_empty_cart();
+		}
 		die();
 	}
 
@@ -834,7 +839,6 @@ class netopiapayments extends WC_Payment_Gateway {
 	public function getWpInfo() {
 		global $wp_version;
 		return 'Version '.$wp_version;
-		
 	}
 
 	public function getWooInfo() {
