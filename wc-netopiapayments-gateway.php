@@ -1,14 +1,18 @@
 <?php
+ /**
+  * Becuse in PHP 8.2 and later the Dynamic Properties are deprecated 
+  * We added "AllowDynamicProperties" attribute
+  */
+ #[AllowDynamicProperties]
 class netopiapayments extends WC_Payment_Gateway {
 	// Setup our Gateway's id, description and other values
 	function __construct() {
-
-		$this->id 					= "netopiapayments";
-		$this->method_title 		= __( "NETOPIA Payments", 'netopiapayments' );
-		$this->method_description 	= __( "NETOPIA Payments Payment Gateway Plug-in for WooCommerce", 'netopiapayments' );
-		$this->title 				= __( "NETOPIA", 'netopiapayments' );
-		$this->icon 				= NTP_PLUGIN_DIR . 'img/netopiapayments.gif';
-		$this->has_fields 			= true;
+		$this->id = "netopiapayments";
+		$this->method_title = __( "NETOPIA Payments", 'netopiapayments' );
+		$this->method_description = __( "NETOPIA Payments Payment Gateway Plug-in for WooCommerce", 'netopiapayments' );
+		$this->title = __( "NETOPIA", 'netopiapayments' );
+		$this->icon = NTP_PLUGIN_DIR . 'img/netopiapayments.gif';
+		$this->has_fields = true;
 		$this->notify_url        	= WC()->api_request_url( 'netopiapayments' );
 
 		// Supports the default credit card form
@@ -38,17 +42,16 @@ class netopiapayments extends WC_Payment_Gateway {
 			// class will be used instead
 
 			add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-
-			if(get_option( 'woocommerce_netopiapayments_certifications' ) === 'verify-and-regenerate') {
-				if($this->account_id) {
-					$this->certificateVerifyRegenerate($this->account_id);
-					delete_option( 'woocommerce_netopiapayments_certifications' );// delete Option after executed one time
-				}
+			if(get_option( 'woocommerce_netopiapayments_certifications' ) === 'verify-and-regenerate') {	
+				if($this->account_id) {	
+					$this->certificateVerifyRegenerate($this->account_id);	
+					delete_option( 'woocommerce_netopiapayments_certifications' );// delete Option after executed one time	
+				}	
 			}
 		}
-		
+
 		add_action('woocommerce_receipt_netopiapayments', array(&$this, 'receipt_page'));
-	}
+	} 	
 
 	// Build the administration fields for this specific Gateway
 	public function init_form_fields() {
@@ -146,22 +149,20 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
 	function payment_fields() {
-      	// Description of payment method from settings
-      	if ( $this->description ) {
-			?><p><?php echo $this->description; ?></p><?php 
-		}
-
-  		if ( $this->payment_methods ) {
+		// Description of payment method from settings
+      	if ( $this->description ) { ?>
+        	<p><?php echo $this->description; ?></p>
+  		<?php }
+  		if ( $this->payment_methods ) {  
   			$payment_methods = $this->payment_methods;	
   		}else{
   			$payment_methods = array('credit_card');
   		}
-  		
   		$name_methods = array(
-		          'credit_card'	  => __( 'Credit Card', 'netopiapayments' ),
-		          'sms'			  => __('SMS' , 'netopiapayments' ),
-		          'bank_transfer' => __( 'Bank Transfer', 'netopiapayments' ),
-		          'bitcoin'  	  => __( 'Bitcoin', 'netopiapayments' )
+		          'credit_card'	      => __( 'Credit Card', 'netopiapayments' ),
+		          'sms'			        => __('SMS' , 'netopiapayments' ),
+		          'bank_transfer'		      => __( 'Bank Transfer', 'netopiapayments' ),
+		          'bitcoin'  => __( 'Bitcoin', 'netopiapayments' )
 		          );
   		?>
   		<div id="netopia-methods">
@@ -265,13 +266,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		// who to charge and how much
 		$customer_order = new WC_Order( $order_id );
 		$user = new WP_User( $customer_order->get_user_id());
-				
-		/**
-		 * Plugin working on two diffrent environment
-		 * - sandbox :  as test mod
-		 * - live : for real transactions
-		 *  in folowing we decide which mod to use
-		 */
+		
 		$paymentUrl = ( $this->environment == 'yes' ) 
 						   ? 'https://sandboxsecure.mobilpay.ro/'
 						   : 'https://secure.mobilpay.ro/';
@@ -288,10 +283,10 @@ class netopiapayments extends WC_Payment_Gateway {
 
 		$method = $this->get_post( 'method' );
 		$name_methods = array(
-		          'credit_card'	  => __( 'Credit Card', 'netopiapayments' ),
-		          'sms'			  => __('SMS' , 'netopiapayments' ),
+		          'credit_card' => __( 'Credit Card', 'netopiapayments' ),
+		          'sms' => __('SMS' , 'netopiapayments' ),
 		          'bank_transfer' => __( 'Bank Transfer', 'netopiapayments' ),
-		          'bitcoin'  	  => __( 'Bitcoin', 'netopiapayments' )
+		          'bitcoin' => __( 'Bitcoin', 'netopiapayments' )
 		          );
 		switch ($method) {
 			case 'sms':		
@@ -346,23 +341,22 @@ class netopiapayments extends WC_Payment_Gateway {
 			$objPmReq->invoice->setShippingAddress($shippingAddress);
 		}		
 		
-		$objPmReq->params = array(
-			'order_id'		=> $order_id,
-			'customer_id'	=> $customer_order->get_user_id(),
-			'customer_ip'	=> $_SERVER['REMOTE_ADDR'],
-			'method'		=> $method,
-			'cartSummery' 	=> $this->getCartSummary(),
-			'wordpress' 	=> $this->getWpInfo(),
-			'wooCommerce' 	=> $this->getWooInfo()
+		$objPmReq->params = array(	
+			'order_id'		=> $order_id,	
+			'customer_id'	=> $customer_order->get_user_id(),	
+			'customer_ip'	=> $_SERVER['REMOTE_ADDR'],	
+			'method'		=> $method,	
+			'cartSummary' 	=> $this->getCartSummary(),	
+			'wordpress' 	=> $this->getWpInfo(),	
+			'wooCommerce' 	=> $this->getWooInfo()	
 		);
-		
-
-		try {
+		try {	
 		$objPmReq->encrypt($x509FilePath);
-		
 		return '<form action="'.$paymentUrl.'" method="post" id="frmPaymentRedirect">
 				<input type="hidden" name="env_key" value="'.$objPmReq->getEnvKey().'"/>
-				<input type="hidden" name="data" value="'.$objPmReq->getEncData().'"/>				
+				<input type="hidden" name="data" value="'.$objPmReq->getEncData().'"/>
+				<input type="hidden" name="cipher" value="'.$objPmReq->getCipher().'"/>
+				<input type="hidden" name="iv" value="'.$objPmReq->getIv().'"/>
 				<input type="submit" class="button-alt" id="submit_netopia_payment_form" value="'.__('Plateste prin NETOPIA payments', 'netopiapayments').'" /> <a class="button cancel" href="'.$customer_order->get_cancel_order_url().'">'.__('Anuleaza comanda &amp; goleste cosul', 'netopiapayments').'</a>
 				<script type="text/javascript">
 				jQuery(function(){
@@ -412,6 +406,18 @@ class netopiapayments extends WC_Payment_Gateway {
 		$errorCode 		= 0;
 		$errorType		= Netopia_Payment_Request_Abstract::CONFIRM_ERROR_TYPE_NONE;
 		$errorMessage	= '';
+		$env_key    = $_POST['env_key'];
+		$data       = $_POST['data'];
+		$cipher     = 'rc4';
+		$iv         = null;
+		if(array_key_exists('cipher', $_POST))
+		{
+			$cipher = $_POST['cipher'];
+			if(array_key_exists('iv', $_POST))
+			{
+				$iv = $_POST['iv'];
+			}
+		}
 		
 		$msg_errors = array('16'=>'card has a risk (i.e. stolen card)', '17'=>'card number is incorrect', '18'=>'closed card', '19'=>'card is expired', '20'=>'insufficient funds', '21'=>'cVV2 code incorrect', '22'=>'issuer is unavailable', '32'=>'amount is incorrect', '33'=>'currency is incorrect', '34'=>'transaction not permitted to cardholder', '35'=>'transaction declined', '36'=>'transaction rejected by antifraud filters', '37'=>'transaction declined (breaking the law)', '38'=>'transaction declined', '48'=>'invalid request', '49'=>'duplicate PREAUTH', '50'=>'duplicate AUTH', '51'=>'you can only CANCEL a preauth order', '52'=>'you can only CONFIRM a preauth order', '53'=>'you can only CREDIT a confirmed order', '54'=>'credit amount is higher than auth amount', '55'=>'capture amount is higher than preauth amount', '56'=>'duplicate request', '99'=>'generic error');
 		
@@ -426,9 +432,8 @@ class netopiapayments extends WC_Payment_Gateway {
 			if(isset($_POST['env_key']) && isset($_POST['data'])){
 				try
 				{
-					$objPmReq = Netopia_Payment_Request_Abstract::factoryFromEncrypted($_POST['env_key'], $_POST['data'], $privateKeyFilePath);
+					$objPmReq = Netopia_Payment_Request_Abstract::factoryFromEncrypted($_POST['env_key'], $_POST['data'], $privateKeyFilePath, null, $cipher, $iv);
 					$action = $objPmReq->objPmNotify->action;
-
 					$params = $objPmReq->params;
 					$order = new WC_Order( $params['order_id'] );
 					$user = new WP_User( $params['customer_id'] );
@@ -509,7 +514,7 @@ class netopiapayments extends WC_Payment_Gateway {
 						                    $order->add_order_note('Plata prin NETOPIA payments<br />Transaction ID: '.$transaction_id);
 
 						                    //Add customer order note
-						 					$order->add_order_note($msgDefaultStatus.'<br />NETOPIA Transaction ID: '.$transaction_id, 1);
+											$order->add_order_note($msgDefaultStatus.'<br />NETOPIA Transaction ID: '.$transaction_id, 1);
 
 											$message = 'Thank you for shopping with us.<br />Your transaction was successful, payment was received.<br />Your order is currently being processed.';
 											$message_type = 'success';
@@ -632,7 +637,7 @@ class netopiapayments extends WC_Payment_Gateway {
 		{
 			echo "<crc error_type=\"{$errorType}\" error_code=\"{$errorCode}\">{$errorMessage}</crc>";
 			
-		}
+		}	
 		die();
 	}
 
@@ -657,8 +662,9 @@ class netopiapayments extends WC_Payment_Gateway {
 		return null;
 	}
 
-	public function ntpLog($contents){
-		$file = dirname(__FILE__).'/ntpDebugging_'.date('y-m-d').'.txt';
+	public function ntpLog($contents){	
+		$file = dirname(__FILE__).'/ntpDebugging_'.date('y-m-d').'.txt';	
+		
 		if (is_array($contents))
 			$contents = var_export($contents, true);	
 		else if (is_object($contents))
@@ -668,7 +674,6 @@ class netopiapayments extends WC_Payment_Gateway {
 	}
 
     public function process_admin_options() {
-		
         $this->init_settings();
         $post_data = $this->get_post_data();
         $cerValidation = $this->cerValidation();
@@ -687,7 +692,7 @@ class netopiapayments extends WC_Payment_Gateway {
                         if($_FILES['woocommerce_netopiapayments_'.$key]['size'] != 0 ) {
                             $strMessage = $cerValidation[$key]['type']. ' - ' .$cerValidation[$key]['message'];
                             $this->settings[ $key ] = $this->validate_text_field( $key, $strMessage );
-                        } 
+                        }
                     } catch ( Exception $e ) {
                         $this->add_error( $e->getMessage() );
                     }
@@ -723,7 +728,7 @@ class netopiapayments extends WC_Payment_Gateway {
             else {
                   if ($this->sanitizeVerify($file_extension, $key)){
                     $response = $this->uploadCer($fileInput);
-					$fileContent = $this->getCertificateContent($fileInput["name"]);
+					$fileContent = $this->getCertificateContent($fileInput["name"]);	
 					$this->updateCertificateContent($key.'_content', $fileContent);
                     } else {
                         $response = array(
@@ -789,60 +794,60 @@ class netopiapayments extends WC_Payment_Gateway {
         return current_user_can('manage_woocommerce');
 	}
 
-	public function getCertificateContent($fName){
-		$certificateMap = plugin_dir_path( __FILE__ ).'netopia/certificate/'.$fName;
-		$fileContent = file_get_contents($certificateMap, FILE_USE_INCLUDE_PATH);
-		return $fileContent;
+	public function getCertificateContent($fName){	
+		$certificateMap = plugin_dir_path( __FILE__ ).'netopia/certificate/'.$fName;	
+		$fileContent = file_get_contents($certificateMap, FILE_USE_INCLUDE_PATH);	
+		return $fileContent;	
 	}
 
-	public function updateCertificateContent($key,$content) {
-		update_option( $key, $content, 'yes' );
+	public function updateCertificateContent($key,$content) {	
+		update_option( $key, $content, 'yes' );	
+	}	
+
+	public function certificateVerifyRegenerate($account_id) {	
+		$map = plugin_dir_path( __FILE__ ).'netopia/certificate/';			
+		$arr = [	
+			'sandbox_cer_content' => 'sandbox.'.$account_id.'.public.cer',	
+			'sandbox_key_content' => 'sandbox.'.$account_id.'private.key',	
+			'live_cer_content' => 'live.'.$account_id.'.public.cer',	
+			'live_key_content' => 'live.'.$account_id.'private.key'	
+		];	
+		foreach($arr as $key => $value) {	
+			$fName = $map.$value;	
+			if (file_exists($fName)) {	
+				break;	
+			} else {	
+				$keyContent = get_option('woocommerce_netopiapayments_'.$key, false);	
+				if ($keyContent) {	
+					if(file_put_contents($fName, $keyContent)) {	
+						chmod($fName, 0444);	
+					}						
+				}	
+			}	
+		}	
 	}
 
-	public function certificateVerifyRegenerate($account_id) {
-		$map = plugin_dir_path( __FILE__ ).'netopia/certificate/';		
-		$arr = [
-			'sandbox_cer_content' => 'sandbox.'.$account_id.'.public.cer',
-			'sandbox_key_content' => 'sandbox.'.$account_id.'private.key',
-			'live_cer_content' => 'live.'.$account_id.'.public.cer',
-			'live_key_content' => 'live.'.$account_id.'private.key'
-		];
-		foreach($arr as $key => $value) {
-			$fName = $map.$value;
-			if (file_exists($fName)) {
-				break;
-			} else {
-				$keyContent = get_option('woocommerce_netopiapayments_'.$key, false);
-				if ($keyContent) {
-					if(file_put_contents($fName, $keyContent)) {
-						chmod($fName, 0444);
-					}					
-				}
-			}
-		}
+	public function getCartSummary() {	
+		$cartArr = WC()->cart->get_cart();	
+		$i = 0;	
+		$cartSummary = array();	
+		foreach ($cartArr as $key => $value ) {	
+			$cartSummary[$i]['name'] 				=  $value['data']->get_name();	
+			$cartSummary[$i]['price'] 			=  $value['data']->get_price();	
+			$cartSummary[$i]['quantity'] 			=  $value['quantity'];	
+			$cartSummary[$i]['short_description'] =  substr($value['data']->get_short_description(), 0, 100);	
+			$i++;	
+		}	
+		return json_encode($cartSummary);	
+	}	
+
+	public function getWpInfo() {	
+		global $wp_version;	
+		return 'Version '.$wp_version;	
 	}
 
-	public function getCartSummary() {
-		$cartArr = WC()->cart->get_cart();
-		$i = 0;
-		$cartSummary = array();
-		foreach ($cartArr as $key => $value ) {
-			$cartSummary[$i]['name'] 			  =  $value['data']->get_name();
-			$cartSummary[$i]['price'] 			  =  $value['data']->get_price();
-			$cartSummary[$i]['quantity'] 		  =  $value['quantity'];
-			$cartSummary[$i]['short_description'] =  substr($value['data']->get_short_description(), 0, 100);
-			$i++;
-		}
-		return json_encode($cartSummary);
-	}
-
-	public function getWpInfo() {
-		global $wp_version;
-		return 'Version '.$wp_version;
-	}
-
-	public function getWooInfo() {
-		$wooCommerce_ver = WC()->version;
-		return 'Version '.$wooCommerce_ver;
+	public function getWooInfo() {	
+		$wooCommerce_ver = WC()->version;	
+		return 'Version '.$wooCommerce_ver;	
 	}
 }
